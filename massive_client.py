@@ -85,3 +85,15 @@ class MassiveClient:
         """
         data = self.get(f"/v2/aggs/ticker/{symbol}/prev")
         return data
+
+    def get_ticker_details(self, symbol: str) -> dict:
+        """
+        Fetch detailed company information for a ticker (name, description,
+        market cap, sector, etc.). This is a separate API call from price data.
+        """
+        try:
+            data = self.get(f"/v3/reference/tickers/{symbol}")
+            return data
+        except Exception:
+            # If ticker details endpoint fails, return empty dict
+            return {}
