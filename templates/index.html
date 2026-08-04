@@ -1,375 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Massive Stock Watchlist</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Support Tickets</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; background: #f3f4f6; }
+      .card { background: white; border-radius: 8px; padding: 20px; max-width: 900px; margin: 0 auto; }
+      h1 { margin-bottom: 8px; }
+      .hint { color: #6b7280; margin-bottom: 12px; }
+      .form-group { margin-bottom: 12px; }
+      label { display:block; font-weight:600; margin-bottom:6px; }
+      input[type="text"] { width:100%; padding:8px 10px; border:1px solid #e5e7eb; border-radius:6px }
+      button { padding:8px 14px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer }
+      table { width:100%; border-collapse:collapse; margin-top:12px }
+      th, td { text-align:left; padding:8px; border-bottom:1px solid #e5e7eb }
+      .empty { color:#9ca3af; padding:18px; }
+      ul { padding-left:18px }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Support Tickets</h1>
+      <p class="hint">Create and view internal support tickets and add messages.</p>
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 40px 20px;
-      color: #2d3748;
-    }
+      <form id="ticket-form">
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" placeholder="Issue summary" required>
+        </div>
+        <button type="submit">Create Ticket</button>
+      </form>
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-    }
+      <div id="tickets-list" style="margin-top:20px;"></div>
+      <div id="ticket-messages" style="margin-top:20px;"></div>
+    </div>
 
-    .header {
-      text-align: center;
-      color: white;
-      margin-bottom: 40px;
-    }
+    <script>
+      function showResult(msg){ console.log(msg) }
 
-    h1 {
-      font-size: 42px;
-      font-weight: 700;
-      margin-bottom: 12px;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-    }
+      const ticketForm = document.getElementById('ticket-form');
+      const ticketsList = document.getElementById('tickets-list');
+      const ticketMessages = document.getElementById('ticket-messages');
 
-    .subtitle {
-      font-size: 18px;
-      opacity: 0.95;
-      font-weight: 300;
-    }
-
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      margin-bottom: 30px;
-    }
-
-    .hint {
-      color: #718096;
-      font-size: 14px;
-      margin-bottom: 24px;
-      line-height: 1.6;
-      padding: 12px 16px;
-      background: #f7fafc;
-      border-left: 4px solid #667eea;
-      border-radius: 4px;
-    }
-
-    form {
-      display: flex;
-      gap: 12px;
-      align-items: flex-end;
-    }
-
-    .form-group {
-      flex: 1;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      font-size: 14px;
-      color: #4a5568;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 16px;
-      border: 2px solid #e2e8f0;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      outline: none;
-    }
-
-    input[type="text"]:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    input[type="text"]::placeholder {
-      color: #cbd5e0;
-    }
-
-    button {
-      padding: 14px 32px;
-      font-size: 16px;
-      font-weight: 600;
-      color: white;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-    }
-
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    }
-
-    button:active {
-      transform: translateY(0);
-    }
-
-    #result {
-      margin-top: 20px;
-      padding: 16px 20px;
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      color: white;
-      border-radius: 8px;
-      font-weight: 500;
-      min-height: 20px;
-      display: none;
-      animation: slideIn 0.3s ease;
-    }
-
-    #result.show {
-      display: block;
-    }
-
-    #result.success {
-      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    }
-
-    #result.error {
-      background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .table-container {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-    }
-
-    thead {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-
-    th {
-      padding: 16px;
-      text-align: left;
-      font-size: 13px;
-      font-weight: 700;
-      color: white;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-
-    th:first-child {
-      border-top-left-radius: 8px;
-    }
-
-    th:last-child {
-      border-top-right-radius: 8px;
-    }
-
-    tbody tr {
-      transition: all 0.2s ease;
-    }
-
-    tbody tr:nth-child(even) {
-      background: #f7fafc;
-    }
-
-    tbody tr:hover {
-      background: #edf2f7;
-      transform: scale(1.01);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    td {
-      padding: 16px;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: 14px;
-    }
-
-    td:first-child {
-      font-weight: 700;
-      color: #667eea;
-    }
-
-    tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    tbody tr:last-child td:first-child {
-      border-bottom-left-radius: 8px;
-    }
-
-    tbody tr:last-child td:last-child {
-      border-bottom-right-radius: 8px;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #a0aec0;
-    }
-
-    .empty-state svg {
-      width: 80px;
-      height: 80px;
-      margin-bottom: 20px;
-      opacity: 0.5;
-    }
-
-    @media (max-width: 640px) {
-      h1 {
-        font-size: 32px;
+      async function loadTickets(){
+        const r = await fetch('/tickets');
+        const data = await r.json();
+        if (!r.ok) { ticketsList.innerHTML = '<div class="empty">Failed to load tickets</div>'; return }
+        if (!data.length) { ticketsList.innerHTML = '<div class="empty">No tickets yet.</div>'; return }
+        let html = '<table><thead><tr><th>Title</th><th>Status</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead><tbody>'
+        data.forEach(t=>{ const created = t.created_at ? new Date(t.created_at).toLocaleString() : '-'; html += `<tr><td>${t.title}</td><td>${t.status}</td><td>${t.created_by}</td><td>${created}</td><td><button data-id="${t.ticket_id}" class="view">View</button></td></tr>` })
+        html += '</tbody></table>'
+        ticketsList.innerHTML = html;
+        document.querySelectorAll('.view').forEach(b=>b.addEventListener('click', ()=>loadMessages(b.dataset.id)));
       }
 
-      .card {
-        padding: 24px;
+      ticketForm.addEventListener('submit', async e=>{
+        e.preventDefault();
+        const title = document.getElementById('title').value;
+        const r = await fetch('/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})});
+        const d = await r.json();
+        if (!r.ok) { showResult('create failed'); return }
+        document.getElementById('title').value = '';
+        loadTickets();
+      });
+
+      async function loadMessages(ticketId){
+        ticketMessages.innerHTML = '<div class="hint">Loading messages...</div>';
+        const r = await fetch(`/tickets/${ticketId}/messages`);
+        const d = await r.json();
+        if (!r.ok) { ticketMessages.innerHTML = '<div class="empty">Failed to load messages</div>'; return }
+        let html = `<h3>Messages for ${ticketId}</h3>`;
+        html += '<ul>';
+        d.forEach(m=>{ const created = m.created_at ? new Date(m.created_at).toLocaleString() : '-'; html += `<li><strong>${m.author}</strong> (${created}): ${m.message_text}</li>` });
+        html += '</ul>';
+        html += `<form id="message-form"><div class="form-group"><label for="message_text">Message</label><input type="text" id="message_text" required></div><button type="submit">Add Message</button></form>`;
+        ticketMessages.innerHTML = html;
+        document.getElementById('message-form').addEventListener('submit', async e=>{ e.preventDefault(); const text = document.getElementById('message_text').value; const resp = await fetch(`/tickets/${ticketId}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message_text:text})}); if (!resp.ok) { showResult('add failed'); return } loadMessages(ticketId) });
       }
 
-      form {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      button {
-        width: 100%;
-      }
-
-      table {
-        font-size: 12px;
-      }
-
-      th, td {
-        padding: 10px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <h1>Stock Watchlist</h1>
-  <p class="hint">Enter a single ticker symbol. This sends exactly ONE call to the Massive API to fetch the latest price, then adds it to your watchlist.</p>
-
-  <form id="stock-form">
-    <label for="symbol">Ticker symbol</label>
-    <input type="text" id="symbol" name="symbol" placeholder="AAPL" required>
-    <button type="submit">Add to watchlist</button>
-  </form>
-
-  <div id="result"></div>
-
-  <table id="watchlist-table">
-    <thead>
-      <tr>
-        <th>Symbol</th>
-        <th>Email</th>
-        <th>Latest price</th>
-        <th>Updated</th>
-      </tr>
-    </thead>
-    <tbody id="watchlist-body"></tbody>
-  </table>
-
-  <script>
-    const form = document.getElementById("stock-form");
-    const resultEl = document.getElementById("result");
-    const watchlistBody = document.getElementById("watchlist-body");
-
-    async function loadWatchlist() {
-      try {
-        const resp = await fetch("/watchlist");
-        const data = await resp.json();
-        if (!resp.ok) {
-          showResult("Error loading watchlist: " + (data.error || resp.statusText), 'error');
-          return;
-        }
-        watchlistBody.innerHTML = "";
-        if (data.length === 0) {
-          watchlistBody.innerHTML = `
-            <tr class="empty-state">
-              <td colspan="4">
-                <div>
-                  <svg fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
-                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"></path>
-                  </svg>
-                  <p>No stocks in your watchlist yet. Add one above!</p>
-                </div>
-              </td>
-            </tr>
-          `;
-          return;
-        }
-        data.forEach((row) => {
-          const tr = document.createElement("tr");
-          const price = row.latest_price !== null && row.latest_price !== undefined
-            ? "$" + Number(row.latest_price).toFixed(2)
-            : "-";
-          const updated = row.updated_at ? new Date(row.updated_at).toLocaleString() : "-";
-          tr.innerHTML = `<td>${row.symbol}</td><td>${row.email || "-"}</td><td>${price}</td><td>${updated}</td>`;
-          watchlistBody.appendChild(tr);
+      loadTickets();
+    </script>
+  </body>
+  </html>
+            const r = await fetch(`/tickets/${ticketId}/messages`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message_text: text})});
+            const d = await r.json();
+            if (!r.ok) { showResult('❌ ' + (d.error || r.statusText),'error'); return; }
+            showResult('✅ Message added', 'success');
+            loadMessages(ticketId);
+          } catch (err) { showResult('❌ ' + err,'error'); }
         });
-      } catch (err) {
-        showResult("Failed to load watchlist: " + err, 'error');
-      }
+      } catch (err) { showResult('Failed to load messages: ' + err, 'error'); }
     }
 
-    function showResult(message, type = 'info') {
-      resultEl.textContent = message;
-      resultEl.className = 'show ' + type;
-      setTimeout(() => {
-        resultEl.classList.remove('show');
-      }, 5000);
-    }
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const symbol = document.getElementById("symbol").value;
-      showResult("⏳ Adding to watchlist...", 'info');
-
-      try {
-        const resp = await fetch("/watchlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ symbol }),
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-          showResult("❌ " + (data.error || resp.statusText), 'error');
-          return;
-        }
-        showResult("✅ Successfully added " + data.symbol + " at $" + Number(data.latest_price).toFixed(2), 'success');
-        document.getElementById("symbol").value = "";
-        loadWatchlist();
-      } catch (err) {
-        showResult("❌ Request failed: " + err, 'error');
-      }
-    });
-
-    loadWatchlist();
+    loadTickets();
   </script>
 </body>
 </html>
