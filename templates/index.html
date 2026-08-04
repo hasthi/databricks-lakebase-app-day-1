@@ -1,98 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <title>Support Tickets</title>
-    <style>
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; background: #f3f4f6; }
-      .card { background: white; border-radius: 8px; padding: 20px; max-width: 900px; margin: 0 auto; }
-      h1 { margin-bottom: 8px; }
-      .hint { color: #6b7280; margin-bottom: 12px; }
-      .form-group { margin-bottom: 12px; }
-      label { display:block; font-weight:600; margin-bottom:6px; }
-      input[type="text"] { width:100%; padding:8px 10px; border:1px solid #e5e7eb; border-radius:6px }
-      button { padding:8px 14px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer }
-      table { width:100%; border-collapse:collapse; margin-top:12px }
-      th, td { text-align:left; padding:8px; border-bottom:1px solid #e5e7eb }
-      .empty { color:#9ca3af; padding:18px; }
-      ul { padding-left:18px }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <h1>Support Tickets</h1>
-      <p class="hint">Create and view internal support tickets and add messages.</p>
+  <meta charset="UTF-8">
+  <title>Support Tickets</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; background: #f3f4f6; }
+    .card { background: white; border-radius: 8px; padding: 20px; max-width: 900px; margin: 0 auto; }
+    h1 { margin-bottom: 8px; }
+    .hint { color: #6b7280; margin-bottom: 12px; }
+    .form-group { margin-bottom: 12px; }
+    label { display:block; font-weight:600; margin-bottom:6px; }
+    input[type="text"] { width:100%; padding:8px 10px; border:1px solid #e5e7eb; border-radius:6px }
+    button { padding:8px 14px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer }
+    table { width:100%; border-collapse:collapse; margin-top:12px }
+    th, td { text-align:left; padding:8px; border-bottom:1px solid #e5e7eb }
+    .empty { color:#9ca3af; padding:18px; }
+    ul { padding-left:18px }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Support Tickets</h1>
+    <p class="hint">Create and view internal support tickets and add messages.</p>
 
-      <form id="ticket-form">
-        <div class="form-group">
-          <label for="title">Title</label>
-          <input type="text" id="title" name="title" placeholder="Issue summary" required>
-        </div>
-        <button type="submit">Create Ticket</button>
-      </form>
+    <form id="ticket-form">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input type="text" id="title" name="title" placeholder="Issue summary" required>
+      </div>
+      <button type="submit">Create Ticket</button>
+    </form>
 
-      <div id="tickets-list" style="margin-top:20px;"></div>
-      <div id="ticket-messages" style="margin-top:20px;"></div>
-    </div>
+    <div id="tickets-list" style="margin-top:20px;"></div>
+    <div id="ticket-messages" style="margin-top:20px;"></div>
+  </div>
 
-    <script>
-      function showResult(msg){ console.log(msg) }
+  <script>
+    function showResult(msg, type){ 
+      console.log(`[${type}] ${msg}`); 
+    }
 
-      const ticketForm = document.getElementById('ticket-form');
-      const ticketsList = document.getElementById('tickets-list');
-      const ticketMessages = document.getElementById('ticket-messages');
+    const ticketForm = document.getElementById('ticket-form');
+    const ticketsList = document.getElementById('tickets-list');
+    const ticketMessages = document.getElementById('ticket-messages');
 
-      async function loadTickets(){
+    async function loadTickets(){
+      try {
         const r = await fetch('/tickets');
         const data = await r.json();
-        if (!r.ok) { ticketsList.innerHTML = '<div class="empty">Failed to load tickets</div>'; return }
-        if (!data.length) { ticketsList.innerHTML = '<div class="empty">No tickets yet.</div>'; return }
-        let html = '<table><thead><tr><th>Title</th><th>Status</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead><tbody>'
-        data.forEach(t=>{ const created = t.created_at ? new Date(t.created_at).toLocaleString() : '-'; html += `<tr><td>${t.title}</td><td>${t.status}</td><td>${t.created_by}</td><td>${created}</td><td><button data-id="${t.ticket_id}" class="view">View</button></td></tr>` })
-        html += '</tbody></table>'
+        if (!r.ok) { 
+          ticketsList.innerHTML = '<div class="empty">Failed to load tickets</div>'; 
+          return;
+        }
+        if (!data.length) { 
+          ticketsList.innerHTML = '<div class="empty">No tickets yet.</div>'; 
+          return;
+        }
+        let html = '<table><thead><tr><th>Title</th><th>Status</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+        data.forEach(t => {
+          const created = t.created_at ? new Date(t.created_at).toLocaleString() : '-';
+          html += `<tr><td>${t.title}</td><td>${t.status}</td><td>${t.created_by}</td><td>${created}</td><td><button data-id="${t.ticket_id}" class="view">View</button></td></tr>`;
+        });
+        html += '</tbody></table>';
         ticketsList.innerHTML = html;
-        document.querySelectorAll('.view').forEach(b=>b.addEventListener('click', ()=>loadMessages(b.dataset.id)));
+        document.querySelectorAll('.view').forEach(b => {
+          b.addEventListener('click', () => loadMessages(b.dataset.id));
+        });
+      } catch (err) {
+        showResult('Failed to load tickets: ' + err, 'error');
       }
+    }
 
-      ticketForm.addEventListener('submit', async e=>{
-        e.preventDefault();
+    ticketForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
         const title = document.getElementById('title').value;
-        const r = await fetch('/tickets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})});
+        const r = await fetch('/tickets', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({title})
+        });
         const d = await r.json();
-        if (!r.ok) { showResult('create failed'); return }
+        if (!r.ok) { 
+          showResult('❌ Failed to create ticket: ' + (d.error || r.statusText), 'error');
+          return;
+        }
+        showResult('✅ Ticket created', 'success');
         document.getElementById('title').value = '';
         loadTickets();
-      });
+      } catch (err) {
+        showResult('❌ ' + err, 'error');
+      }
+    });
 
-      async function loadMessages(ticketId){
+    async function loadMessages(ticketId){
+      try {
         ticketMessages.innerHTML = '<div class="hint">Loading messages...</div>';
         const r = await fetch(`/tickets/${ticketId}/messages`);
         const d = await r.json();
-        if (!r.ok) { ticketMessages.innerHTML = '<div class="empty">Failed to load messages</div>'; return }
-        let html = `<h3>Messages for ${ticketId}</h3>`;
+        if (!r.ok) { 
+          ticketMessages.innerHTML = '<div class="empty">Failed to load messages</div>'; 
+          return;
+        }
+        let html = `<h3>Messages for Ticket ${ticketId.substring(0, 8)}</h3>`;
         html += '<ul>';
-        d.forEach(m=>{ const created = m.created_at ? new Date(m.created_at).toLocaleString() : '-'; html += `<li><strong>${m.author}</strong> (${created}): ${m.message_text}</li>` });
+        d.forEach(m => {
+          const created = m.created_at ? new Date(m.created_at).toLocaleString() : '-';
+          html += `<li><strong>${m.author}</strong> (${created}): ${m.message_text}</li>`;
+        });
         html += '</ul>';
-        html += `<form id="message-form"><div class="form-group"><label for="message_text">Message</label><input type="text" id="message_text" required></div><button type="submit">Add Message</button></form>`;
+        html += `<form id="message-form"><div class="form-group"><label for="message_text">Add Message</label><input type="text" id="message_text" required></div><button type="submit">Send</button></form>`;
         ticketMessages.innerHTML = html;
-        document.getElementById('message-form').addEventListener('submit', async e=>{ e.preventDefault(); const text = document.getElementById('message_text').value; const resp = await fetch(`/tickets/${ticketId}/messages`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message_text:text})}); if (!resp.ok) { showResult('add failed'); return } loadMessages(ticketId) });
-      }
-
-      loadTickets();
-    </script>
-  </body>
-  </html>
-            const r = await fetch(`/tickets/${ticketId}/messages`, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message_text: text})});
+        
+        document.getElementById('message-form').addEventListener('submit', async e => {
+          e.preventDefault();
+          try {
+            const text = document.getElementById('message_text').value;
+            const r = await fetch(`/tickets/${ticketId}/messages`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({message_text: text})
+            });
             const d = await r.json();
-            if (!r.ok) { showResult('❌ ' + (d.error || r.statusText),'error'); return; }
+            if (!r.ok) { 
+              showResult('❌ ' + (d.error || r.statusText), 'error');
+              return;
+            }
             showResult('✅ Message added', 'success');
             loadMessages(ticketId);
-          } catch (err) { showResult('❌ ' + err,'error'); }
+          } catch (err) {
+            showResult('❌ ' + err, 'error');
+          }
         });
-      } catch (err) { showResult('Failed to load messages: ' + err, 'error'); }
+      } catch (err) {
+        showResult('Failed to load messages: ' + err, 'error');
+      }
     }
 
     loadTickets();
