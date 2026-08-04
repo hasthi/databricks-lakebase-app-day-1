@@ -26,7 +26,6 @@ _w = WorkspaceClient()
 
 
 
-
 def ensure_tickets_table():
     """Create the `tickets` table in Lakebase if it doesn't exist."""
     lakebase.run_write(
@@ -78,21 +77,16 @@ def healthz():
 
 
 @app.errorhandler(Exception)
-def handle_exception(err):
-    """Ensure all unhandled errors return JSON (not an HTML error page),
-    so the frontend's resp.json() call never chokes on HTML."""
+def handle_error(error):
+    """Catch-all error handler to return JSON errors for API consistency."""
     logger.exception("Unhandled exception while processing request")
-    status_code = getattr(err, "code", 500)
-    if not isinstance(status_code, int):
-        status_code = 500
-    return jsonify({"error": str(err)}), status_code
+    return jsonify({"error": str(error)}), 500
 
 
 @app.route("/")
 def index():
     """Support tickets UI."""
     return render_template("index.html")
-
 
 
 
@@ -135,6 +129,36 @@ def create_ticket():
     return jsonify({"ticket_id": ticket_id, "title": title, "status": status, "created_by": created_by})
 
 
+@app.route("/tickets/<ticket_id>", methods=["PATCH"])
+def update_ticket_status(ticket_id: str):
+    """Update the status of an existing ticket."""
+    ensure_tickets_table()
+    
+    if request.is_json:
+        new_status = (request.json.get("status") or "").strip()
+    else:
+        new_status = (request.form.get("status") or "").strip()
+    
+    if not new_status:
+        return jsonify({"error": "Status is required"}), 400
+    
+    if new_status not in ["open", "in-progress", "resolved"]:
+        return jsonify({"error": "Status must be one of: open, in-progress, resolved"}), 400
+    
+    # Verify ticket exists
+    found = lakebase.run_query("SELECT ticket_id FROM tickets WHERE ticket_id = %s", (ticket_id,))
+    if not found:
+        return jsonify({"error": "Ticket not found"}), 404
+    
+    # Update the status
+    lakebase.run_write(
+        "UPDATE tickets SET status = %s WHERE ticket_id = %s",
+        (new_status, ticket_id),
+    )
+    
+    return jsonify({"ticket_id": ticket_id, "status": new_status})
+
+
 @app.route("/tickets/<ticket_id>/messages", methods=["GET"])
 def list_messages(ticket_id: str):
     """Return all messages for a ticket ordered by creation time."""
@@ -174,9 +198,6 @@ def add_message(ticket_id: str):
     )
 
     return jsonify({"message_id": message_id, "ticket_id": ticket_id, "message_text": message_text, "author": author})
-
-
-
 
 
 

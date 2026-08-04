@@ -5,17 +5,34 @@
   <title>Support Tickets</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; background: #f3f4f6; }
-    .card { background: white; border-radius: 8px; padding: 20px; max-width: 900px; margin: 0 auto; }
+    .card { background: white; border-radius: 8px; padding: 20px; max-width: 1100px; margin: 0 auto; }
     h1 { margin-bottom: 8px; }
     .hint { color: #6b7280; margin-bottom: 12px; }
     .form-group { margin-bottom: 12px; }
     label { display:block; font-weight:600; margin-bottom:6px; }
     input[type="text"] { width:100%; padding:8px 10px; border:1px solid #e5e7eb; border-radius:6px }
-    button { padding:8px 14px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer }
+    button { padding:8px 14px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer; margin-right:4px; }
+    button:hover { background:#1d4ed8; }
     table { width:100%; border-collapse:collapse; margin-top:12px }
     th, td { text-align:left; padding:8px; border-bottom:1px solid #e5e7eb }
     .empty { color:#9ca3af; padding:18px; }
     ul { padding-left:18px }
+    .status-badge { 
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-open { background: #dbeafe; color: #1e40af; }
+    .status-in-progress { background: #fef3c7; color: #92400e; }
+    .status-resolved { background: #d1fae5; color: #065f46; }
+    .status-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      margin: 2px;
+    }
+    .action-buttons { white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -37,12 +54,39 @@
 
   <script>
     function showResult(msg, type){ 
-      console.log(`[${type}] ${msg}`); 
+      console.log(`[${type}] ${msg}`);
+      // You can add a toast notification here if desired
     }
 
     const ticketForm = document.getElementById('ticket-form');
     const ticketsList = document.getElementById('tickets-list');
     const ticketMessages = document.getElementById('ticket-messages');
+
+    function getStatusBadgeClass(status) {
+      if (status === 'open') return 'status-open';
+      if (status === 'in-progress') return 'status-in-progress';
+      if (status === 'resolved') return 'status-resolved';
+      return 'status-open';
+    }
+
+    async function updateTicketStatus(ticketId, newStatus) {
+      try {
+        const r = await fetch(`/tickets/${ticketId}`, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({status: newStatus})
+        });
+        const d = await r.json();
+        if (!r.ok) {
+          showResult('❌ Failed to update status: ' + (d.error || r.statusText), 'error');
+          return;
+        }
+        showResult('✅ Status updated to ' + newStatus, 'success');
+        loadTickets(); // Reload the tickets list
+      } catch (err) {
+        showResult('❌ Error updating status: ' + err, 'error');
+      }
+    }
 
     async function loadTickets(){
       try {
@@ -59,12 +103,37 @@
         let html = '<table><thead><tr><th>Title</th><th>Status</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
         data.forEach(t => {
           const created = t.created_at ? new Date(t.created_at).toLocaleString() : '-';
-          html += `<tr><td>${t.title}</td><td>${t.status}</td><td>${t.created_by}</td><td>${created}</td><td><button data-id="${t.ticket_id}" class="view">View</button></td></tr>`;
+          const statusClass = getStatusBadgeClass(t.status);
+          html += `<tr>
+            <td>${t.title}</td>
+            <td><span class="status-badge ${statusClass}">${t.status}</span></td>
+            <td>${t.created_by}</td>
+            <td>${created}</td>
+            <td class="action-buttons">
+              <button data-id="${t.ticket_id}" class="view">View</button>`;
+          
+          // Add status change buttons based on current status
+          if (t.status !== 'open') {
+            html += `<button data-id="${t.ticket_id}" data-status="open" class="status-btn change-status">Open</button>`;
+          }
+          if (t.status !== 'in-progress') {
+            html += `<button data-id="${t.ticket_id}" data-status="in-progress" class="status-btn change-status">In Progress</button>`;
+          }
+          if (t.status !== 'resolved') {
+            html += `<button data-id="${t.ticket_id}" data-status="resolved" class="status-btn change-status">Resolve</button>`;
+          }
+          
+          html += `</td></tr>`;
         });
         html += '</tbody></table>';
         ticketsList.innerHTML = html;
+        
+        // Attach event listeners
         document.querySelectorAll('.view').forEach(b => {
           b.addEventListener('click', () => loadMessages(b.dataset.id));
+        });
+        document.querySelectorAll('.change-status').forEach(b => {
+          b.addEventListener('click', () => updateTicketStatus(b.dataset.id, b.dataset.status));
         });
       } catch (err) {
         showResult('Failed to load tickets: ' + err, 'error');
@@ -103,12 +172,16 @@
           return;
         }
         let html = `<h3>Messages for Ticket ${ticketId.substring(0, 8)}</h3>`;
-        html += '<ul>';
-        d.forEach(m => {
-          const created = m.created_at ? new Date(m.created_at).toLocaleString() : '-';
-          html += `<li><strong>${m.author}</strong> (${created}): ${m.message_text}</li>`;
-        });
-        html += '</ul>';
+        if (d.length === 0) {
+          html += '<p class="empty">No messages yet.</p>';
+        } else {
+          html += '<ul>';
+          d.forEach(m => {
+            const created = m.created_at ? new Date(m.created_at).toLocaleString() : '-';
+            html += `<li><strong>${m.author}</strong> (${created}): ${m.message_text}</li>`;
+          });
+          html += '</ul>';
+        }
         html += `<form id="message-form"><div class="form-group"><label for="message_text">Add Message</label><input type="text" id="message_text" required></div><button type="submit">Send</button></form>`;
         ticketMessages.innerHTML = html;
         
