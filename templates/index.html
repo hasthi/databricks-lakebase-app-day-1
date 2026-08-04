@@ -2,97 +2,452 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Support Tickets</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support Tickets - Databricks</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; background: #f3f4f6; }
-    .card { background: white; border-radius: 8px; padding: 20px; max-width: 1100px; margin: 0 auto; }
-    h1 { margin-bottom: 8px; }
-    .hint { color: #6b7280; margin-bottom: 12px; }
-    .form-group { margin-bottom: 12px; }
-    label { display:block; font-weight:600; margin-bottom:6px; }
-    input[type="text"] { width:100%; padding:8px 10px; border:1px solid #e5e7eb; border-radius:6px }
-    button { padding:8px 14px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer; margin-right:4px; }
-    button:hover { background:#1d4ed8; }
-    table { width:100%; border-collapse:collapse; margin-top:12px }
-    th, td { text-align:left; padding:8px; border-bottom:1px solid #e5e7eb }
-    .empty { color:#9ca3af; padding:18px; }
-    ul { padding-left:18px }
-    .status-badge { 
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body { 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 32px 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .section-title {
+      font-size: 1.25rem;
       font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .status-open { background: #dbeafe; color: #1e40af; }
-    .status-in-progress { background: #fef3c7; color: #92400e; }
-    .status-resolved { background: #d1fae5; color: #065f46; }
-    .status-btn {
-      padding: 4px 8px;
-      font-size: 12px;
-      margin: 2px;
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
     }
-    .action-buttons { white-space: nowrap; }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .form-group input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .filter-section {
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #f3f4f6;
+    }
+
+    .filter-label {
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
     .filter-buttons {
-      margin: 16px 0;
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
+
     .filter-btn {
-      padding: 6px 12px;
+      padding: 8px 16px;
+      background: #f3f4f6;
+      color: #6b7280;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover {
       background: #e5e7eb;
       color: #374151;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
     }
-    .filter-btn:hover {
-      background: #d1d5db;
-    }
+
     .filter-btn.active {
-      background: #2563eb;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.3);
+    }
+
+    .tickets-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+    }
+
+    .tickets-table thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .tickets-table th {
+      padding: 16px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .tickets-table th:first-child {
+      border-top-left-radius: 10px;
+    }
+
+    .tickets-table th:last-child {
+      border-top-right-radius: 10px;
+    }
+
+    .tickets-table tbody tr {
+      border-bottom: 1px solid #f3f4f6;
+      transition: background 0.2s;
+    }
+
+    .tickets-table tbody tr:hover {
+      background: #f9fafb;
+    }
+
+    .tickets-table td {
+      padding: 16px;
+      color: #374151;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .status-open {
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+      color: #1e40af;
+    }
+
+    .status-in-progress {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      color: #92400e;
+    }
+
+    .status-resolved {
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      color: #065f46;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-view {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-view:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+
+    .btn-status {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .btn-status:hover {
+      background: #d1d5db;
+      transform: translateY(-1px);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #9ca3af;
+    }
+
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state h3 {
+      font-size: 1.25rem;
+      margin-bottom: 8px;
+      color: #6b7280;
+    }
+
+    .messages-section {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+
+    .messages-section h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .message-list {
+      list-style: none;
+      margin-bottom: 20px;
+    }
+
+    .message-item {
+      background: white;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .message-author {
+      font-weight: 600;
+      color: #667eea;
+      margin-bottom: 4px;
+    }
+
+    .message-time {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .message-text {
+      color: #374151;
+      line-height: 1.6;
+    }
+
+    .toast {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: white;
+      padding: 16px 24px;
+      border-radius: 10px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      display: none;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.show {
+      display: flex;
+    }
+
+    .toast.success {
+      border-left: 4px solid #10b981;
+    }
+
+    .toast.error {
+      border-left: 4px solid #ef4444;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 16px;
+      }
+
+      .header h1 {
+        font-size: 1.75rem;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      .tickets-table {
+        font-size: 0.9rem;
+      }
+
+      .tickets-table th,
+      .tickets-table td {
+        padding: 12px 8px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Support Tickets</h1>
-    <p class="hint">Create and view internal support tickets and add messages.</p>
-
-    <form id="ticket-form">
-      <div class="form-group">
-        <label for="title">Title</label>
-        <input type="text" id="title" name="title" placeholder="Issue summary" required>
-      </div>
-      <button type="submit">Create Ticket</button>
-    </form>
-
-    <div class="filter-buttons">
-      <strong>Filter by status:</strong>
-      <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="open">Open</button>
-      <button class="filter-btn" data-filter="in-progress">In Progress</button>
-      <button class="filter-btn" data-filter="resolved">Resolved</button>
+  <div class="container">
+    <div class="header">
+      <h1>🎫 Support Tickets</h1>
+      <p>Manage and track your support requests</p>
     </div>
 
-    <div id="tickets-list" style="margin-top:20px;"></div>
-    <div id="ticket-messages" style="margin-top:20px;"></div>
+    <div class="card">
+      <div class="section-title">Create New Ticket</div>
+      <form id="ticket-form">
+        <div class="form-group">
+          <label for="title">Ticket Title</label>
+          <input type="text" id="title" name="title" placeholder="Describe your issue briefly..." required>
+        </div>
+        <button type="submit" class="btn btn-primary">Create Ticket</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="filter-section">
+        <div class="filter-label">Filter by Status</div>
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all">All Tickets</button>
+          <button class="filter-btn" data-filter="open">Open</button>
+          <button class="filter-btn" data-filter="in-progress">In Progress</button>
+          <button class="filter-btn" data-filter="resolved">Resolved</button>
+        </div>
+      </div>
+
+      <div id="tickets-list"></div>
+    </div>
+
+    <div id="ticket-messages"></div>
+  </div>
+
+  <div id="toast" class="toast">
+    <span id="toast-message"></span>
   </div>
 
   <script>
-    let allTickets = []; // Store all tickets for filtering
-    let currentFilter = 'all'; // Current active filter
+    let allTickets = [];
+    let currentFilter = 'all';
 
-    function showResult(msg, type){ 
-      console.log(`[${type}] ${msg}`);
+    function showToast(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      toastMessage.textContent = msg;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
     }
-
-    const ticketForm = document.getElementById('ticket-form');
-    const ticketsList = document.getElementById('tickets-list');
-    const ticketMessages = document.getElementById('ticket-messages');
 
     function getStatusBadgeClass(status) {
       if (status === 'open') return 'status-open';
@@ -103,7 +458,6 @@
 
     function setActiveFilter(filter) {
       currentFilter = filter;
-      // Update button styles
       document.querySelectorAll('.filter-btn').forEach(btn => {
         if (btn.dataset.filter === filter) {
           btn.classList.add('active');
@@ -119,41 +473,49 @@
         ? allTickets 
         : allTickets.filter(t => t.status === currentFilter);
 
+      const ticketsList = document.getElementById('tickets-list');
+
       if (filteredTickets.length === 0) {
-        const msg = currentFilter === 'all' ? 'No tickets yet.' : `No ${currentFilter} tickets.`;
-        ticketsList.innerHTML = `<div class="empty">${msg}</div>`;
+        const msg = currentFilter === 'all' ? 'No tickets yet. Create your first one!' : `No ${currentFilter} tickets found.`;
+        ticketsList.innerHTML = `
+          <div class="empty-state">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+            </svg>
+            <h3>${msg}</h3>
+          </div>
+        `;
         return;
       }
 
-      let html = '<table><thead><tr><th>Title</th><th>Status</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+      let html = '<table class="tickets-table"><thead><tr><th>Title</th><th>Status</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
       filteredTickets.forEach(t => {
         const created = t.created_at ? new Date(t.created_at).toLocaleString() : '-';
         const statusClass = getStatusBadgeClass(t.status);
         html += `<tr>
-          <td>${t.title}</td>
+          <td><strong>${t.title}</strong></td>
           <td><span class="status-badge ${statusClass}">${t.status}</span></td>
           <td>${t.created_by}</td>
           <td>${created}</td>
-          <td class="action-buttons">
-            <button data-id="${t.ticket_id}" class="view">View</button>`;
+          <td>
+            <div class="action-buttons">
+              <button data-id="${t.ticket_id}" class="btn-small btn-view view">View Messages</button>`;
         
-        // Add status change buttons based on current status
         if (t.status !== 'open') {
-          html += `<button data-id="${t.ticket_id}" data-status="open" class="status-btn change-status">Open</button>`;
+          html += `<button data-id="${t.ticket_id}" data-status="open" class="btn-small btn-status change-status">Reopen</button>`;
         }
         if (t.status !== 'in-progress') {
-          html += `<button data-id="${t.ticket_id}" data-status="in-progress" class="status-btn change-status">In Progress</button>`;
+          html += `<button data-id="${t.ticket_id}" data-status="in-progress" class="btn-small btn-status change-status">In Progress</button>`;
         }
         if (t.status !== 'resolved') {
-          html += `<button data-id="${t.ticket_id}" data-status="resolved" class="status-btn change-status">Resolve</button>`;
+          html += `<button data-id="${t.ticket_id}" data-status="resolved" class="btn-small btn-status change-status">Resolve</button>`;
         }
         
-        html += `</td></tr>`;
+        html += `</div></td></tr>`;
       });
       html += '</tbody></table>';
       ticketsList.innerHTML = html;
       
-      // Attach event listeners
       document.querySelectorAll('.view').forEach(b => {
         b.addEventListener('click', () => loadMessages(b.dataset.id));
       });
@@ -162,7 +524,6 @@
       });
     }
 
-    // Attach filter button listeners
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.addEventListener('click', () => setActiveFilter(btn.dataset.filter));
     });
@@ -176,13 +537,13 @@
         });
         const d = await r.json();
         if (!r.ok) {
-          showResult('❌ Failed to update status: ' + (d.error || r.statusText), 'error');
+          showToast('Failed to update status: ' + (d.error || r.statusText), 'error');
           return;
         }
-        showResult('✅ Status updated to ' + newStatus, 'success');
-        loadTickets(); // Reload the tickets list
+        showToast(`Status updated to ${newStatus}`, 'success');
+        loadTickets();
       } catch (err) {
-        showResult('❌ Error updating status: ' + err, 'error');
+        showToast('Error updating status', 'error');
       }
     }
 
@@ -191,17 +552,17 @@
         const r = await fetch('/tickets');
         const data = await r.json();
         if (!r.ok) { 
-          ticketsList.innerHTML = '<div class="empty">Failed to load tickets</div>'; 
+          document.getElementById('tickets-list').innerHTML = '<div class="empty-state"><h3>Failed to load tickets</h3></div>'; 
           return;
         }
-        allTickets = data; // Store all tickets
-        renderTickets(); // Render with current filter
+        allTickets = data;
+        renderTickets();
       } catch (err) {
-        showResult('Failed to load tickets: ' + err, 'error');
+        showToast('Failed to load tickets', 'error');
       }
     }
 
-    ticketForm.addEventListener('submit', async e => {
+    document.getElementById('ticket-form').addEventListener('submit', async e => {
       e.preventDefault();
       try {
         const title = document.getElementById('title').value;
@@ -212,39 +573,58 @@
         });
         const d = await r.json();
         if (!r.ok) { 
-          showResult('❌ Failed to create ticket: ' + (d.error || r.statusText), 'error');
+          showToast('Failed to create ticket: ' + (d.error || r.statusText), 'error');
           return;
         }
-        showResult('✅ Ticket created', 'success');
+        showToast('Ticket created successfully!', 'success');
         document.getElementById('title').value = '';
         loadTickets();
       } catch (err) {
-        showResult('❌ ' + err, 'error');
+        showToast('Error creating ticket', 'error');
       }
     });
 
     async function loadMessages(ticketId){
       try {
-        ticketMessages.innerHTML = '<div class="hint">Loading messages...</div>';
         const r = await fetch(`/tickets/${ticketId}/messages`);
         const d = await r.json();
         if (!r.ok) { 
-          ticketMessages.innerHTML = '<div class="empty">Failed to load messages</div>'; 
+          showToast('Failed to load messages', 'error');
           return;
         }
-        let html = `<h3>Messages for Ticket ${ticketId.substring(0, 8)}</h3>`;
+        
+        let html = '<div class="card messages-section">';
+        html += `<h3>💬 Messages for Ticket #${ticketId.substring(0, 8)}</h3>`;
+        
         if (d.length === 0) {
-          html += '<p class="empty">No messages yet.</p>';
+          html += '<p style="color: #9ca3af; text-align: center; padding: 24px;">No messages yet. Start the conversation!</p>';
         } else {
-          html += '<ul>';
+          html += '<ul class="message-list">';
           d.forEach(m => {
             const created = m.created_at ? new Date(m.created_at).toLocaleString() : '-';
-            html += `<li><strong>${m.author}</strong> (${created}): ${m.message_text}</li>`;
+            html += `
+              <li class="message-item">
+                <div class="message-author">${m.author}</div>
+                <div class="message-time">${created}</div>
+                <div class="message-text">${m.message_text}</div>
+              </li>
+            `;
           });
           html += '</ul>';
         }
-        html += `<form id="message-form"><div class="form-group"><label for="message_text">Add Message</label><input type="text" id="message_text" required></div><button type="submit">Send</button></form>`;
-        ticketMessages.innerHTML = html;
+        
+        html += `
+          <form id="message-form">
+            <div class="form-group">
+              <label for="message_text">Add a Message</label>
+              <input type="text" id="message_text" placeholder="Type your message here..." required>
+            </div>
+            <button type="submit" class="btn btn-primary">Send Message</button>
+          </form>
+        `;
+        html += '</div>';
+        
+        document.getElementById('ticket-messages').innerHTML = html;
         
         document.getElementById('message-form').addEventListener('submit', async e => {
           e.preventDefault();
@@ -257,17 +637,17 @@
             });
             const d = await r.json();
             if (!r.ok) { 
-              showResult('❌ ' + (d.error || r.statusText), 'error');
+              showToast('Failed to add message', 'error');
               return;
             }
-            showResult('✅ Message added', 'success');
+            showToast('Message added successfully!', 'success');
             loadMessages(ticketId);
           } catch (err) {
-            showResult('❌ ' + err, 'error');
+            showToast('Error adding message', 'error');
           }
         });
       } catch (err) {
-        showResult('Failed to load messages: ' + err, 'error');
+        showToast('Failed to load messages', 'error');
       }
     }
 
