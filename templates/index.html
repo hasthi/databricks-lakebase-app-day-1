@@ -334,7 +334,7 @@
         if (data.length === 0) {
           watchlistBody.innerHTML = `
             <tr class="empty-state">
-              <td colspan="4">
+              <td colspan="5">
                 <div>
                   <svg fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
@@ -353,7 +353,7 @@
             ? "$" + Number(row.latest_price).toFixed(2)
             : "-";
           const updated = row.updated_at ? new Date(row.updated_at).toLocaleString() : "-";
-          tr.innerHTML = `<td>${row.symbol}</td><td>${row.email || "-"}</td><td>${price}</td><td>${updated}</td>`;
+          tr.innerHTML = `<td>${row.symbol}</td><td>${row.email || "-"}</td><td>${price}</td><td>${updated}</td><td><button class="delete-btn" data-symbol="${row.symbol}">Delete</button></td>`;
           watchlistBody.appendChild(tr);
         });
       } catch (err) {
