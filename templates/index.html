@@ -216,6 +216,29 @@
       color: #667eea;
     }
 
+    .delete-btn {
+      background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .delete-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(235, 51, 73, 0.4);
+    }
+
+    .delete-btn:active {
+      transform: translateY(0);
+    }
+
     tbody tr:last-child td {
       border-bottom: none;
     }
@@ -288,6 +311,7 @@
         <th>Email</th>
         <th>Latest price</th>
         <th>Updated</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody id="watchlist-body"></tbody>
@@ -366,6 +390,37 @@
         loadWatchlist();
       } catch (err) {
         showResult("❌ Request failed: " + err, 'error');
+      }
+    });
+
+    async function deleteFromWatchlist(symbol) {
+      if (!confirm(`Are you sure you want to remove ${symbol} from your watchlist?`)) {
+        return;
+      }
+
+      showResult(`⏳ Removing ${symbol}...`, 'info');
+
+      try {
+        const resp = await fetch(`/watchlist/${symbol}`, {
+          method: "DELETE",
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          showResult("❌ " + (data.error || resp.statusText), 'error');
+          return;
+        }
+        showResult(`✅ Successfully removed ${data.symbol}`, 'success');
+        loadWatchlist();
+      } catch (err) {
+        showResult("❌ Request failed: " + err, 'error');
+      }
+    }
+
+    // Event delegation for delete buttons
+    watchlistBody.addEventListener("click", (e) => {
+      if (e.target.classList.contains("delete-btn")) {
+        const symbol = e.target.getAttribute("data-symbol");
+        deleteFromWatchlist(symbol);
       }
     });
 
