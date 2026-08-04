@@ -33,6 +33,28 @@
       margin: 2px;
     }
     .action-buttons { white-space: nowrap; }
+    .filter-buttons {
+      margin: 16px 0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 6px 12px;
+      background: #e5e7eb;
+      color: #374151;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .filter-btn:hover {
+      background: #d1d5db;
+    }
+    .filter-btn.active {
+      background: #2563eb;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -48,14 +70,24 @@
       <button type="submit">Create Ticket</button>
     </form>
 
+    <div class="filter-buttons">
+      <strong>Filter by status:</strong>
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="open">Open</button>
+      <button class="filter-btn" data-filter="in-progress">In Progress</button>
+      <button class="filter-btn" data-filter="resolved">Resolved</button>
+    </div>
+
     <div id="tickets-list" style="margin-top:20px;"></div>
     <div id="ticket-messages" style="margin-top:20px;"></div>
   </div>
 
   <script>
+    let allTickets = []; // Store all tickets for filtering
+    let currentFilter = 'all'; // Current active filter
+
     function showResult(msg, type){ 
       console.log(`[${type}] ${msg}`);
-      // You can add a toast notification here if desired
     }
 
     const ticketForm = document.getElementById('ticket-form');
@@ -68,6 +100,72 @@
       if (status === 'resolved') return 'status-resolved';
       return 'status-open';
     }
+
+    function setActiveFilter(filter) {
+      currentFilter = filter;
+      // Update button styles
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === filter) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      renderTickets();
+    }
+
+    function renderTickets() {
+      const filteredTickets = currentFilter === 'all' 
+        ? allTickets 
+        : allTickets.filter(t => t.status === currentFilter);
+
+      if (filteredTickets.length === 0) {
+        const msg = currentFilter === 'all' ? 'No tickets yet.' : `No ${currentFilter} tickets.`;
+        ticketsList.innerHTML = `<div class="empty">${msg}</div>`;
+        return;
+      }
+
+      let html = '<table><thead><tr><th>Title</th><th>Status</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
+      filteredTickets.forEach(t => {
+        const created = t.created_at ? new Date(t.created_at).toLocaleString() : '-';
+        const statusClass = getStatusBadgeClass(t.status);
+        html += `<tr>
+          <td>${t.title}</td>
+          <td><span class="status-badge ${statusClass}">${t.status}</span></td>
+          <td>${t.created_by}</td>
+          <td>${created}</td>
+          <td class="action-buttons">
+            <button data-id="${t.ticket_id}" class="view">View</button>`;
+        
+        // Add status change buttons based on current status
+        if (t.status !== 'open') {
+          html += `<button data-id="${t.ticket_id}" data-status="open" class="status-btn change-status">Open</button>`;
+        }
+        if (t.status !== 'in-progress') {
+          html += `<button data-id="${t.ticket_id}" data-status="in-progress" class="status-btn change-status">In Progress</button>`;
+        }
+        if (t.status !== 'resolved') {
+          html += `<button data-id="${t.ticket_id}" data-status="resolved" class="status-btn change-status">Resolve</button>`;
+        }
+        
+        html += `</td></tr>`;
+      });
+      html += '</tbody></table>';
+      ticketsList.innerHTML = html;
+      
+      // Attach event listeners
+      document.querySelectorAll('.view').forEach(b => {
+        b.addEventListener('click', () => loadMessages(b.dataset.id));
+      });
+      document.querySelectorAll('.change-status').forEach(b => {
+        b.addEventListener('click', () => updateTicketStatus(b.dataset.id, b.dataset.status));
+      });
+    }
+
+    // Attach filter button listeners
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => setActiveFilter(btn.dataset.filter));
+    });
 
     async function updateTicketStatus(ticketId, newStatus) {
       try {
@@ -96,45 +194,8 @@
           ticketsList.innerHTML = '<div class="empty">Failed to load tickets</div>'; 
           return;
         }
-        if (!data.length) { 
-          ticketsList.innerHTML = '<div class="empty">No tickets yet.</div>'; 
-          return;
-        }
-        let html = '<table><thead><tr><th>Title</th><th>Status</th><th>Created By</th><th>Created</th><th>Actions</th></tr></thead><tbody>';
-        data.forEach(t => {
-          const created = t.created_at ? new Date(t.created_at).toLocaleString() : '-';
-          const statusClass = getStatusBadgeClass(t.status);
-          html += `<tr>
-            <td>${t.title}</td>
-            <td><span class="status-badge ${statusClass}">${t.status}</span></td>
-            <td>${t.created_by}</td>
-            <td>${created}</td>
-            <td class="action-buttons">
-              <button data-id="${t.ticket_id}" class="view">View</button>`;
-          
-          // Add status change buttons based on current status
-          if (t.status !== 'open') {
-            html += `<button data-id="${t.ticket_id}" data-status="open" class="status-btn change-status">Open</button>`;
-          }
-          if (t.status !== 'in-progress') {
-            html += `<button data-id="${t.ticket_id}" data-status="in-progress" class="status-btn change-status">In Progress</button>`;
-          }
-          if (t.status !== 'resolved') {
-            html += `<button data-id="${t.ticket_id}" data-status="resolved" class="status-btn change-status">Resolve</button>`;
-          }
-          
-          html += `</td></tr>`;
-        });
-        html += '</tbody></table>';
-        ticketsList.innerHTML = html;
-        
-        // Attach event listeners
-        document.querySelectorAll('.view').forEach(b => {
-          b.addEventListener('click', () => loadMessages(b.dataset.id));
-        });
-        document.querySelectorAll('.change-status').forEach(b => {
-          b.addEventListener('click', () => updateTicketStatus(b.dataset.id, b.dataset.status));
-        });
+        allTickets = data; // Store all tickets
+        renderTickets(); // Render with current filter
       } catch (err) {
         showResult('Failed to load tickets: ' + err, 'error');
       }
