@@ -56,15 +56,6 @@ def ensure_watchlist_table():
             symbol TEXT NOT NULL,
             email TEXT NOT NULL,
             latest_price NUMERIC,
-            company_name TEXT,
-            day_open NUMERIC,
-            day_high NUMERIC,
-            day_low NUMERIC,
-            day_close NUMERIC,
-            previous_close NUMERIC,
-            volume BIGINT,
-            market_cap BIGINT,
-            sector TEXT,
             updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             PRIMARY KEY (symbol, email)
         )
@@ -179,77 +170,31 @@ def add_to_watchlist():
 
     client = MassiveClient()
     try:
-        price_data = client.get_latest_price(symbol)
+        data = client.get_latest_price(symbol)  # <-- single API call, latest price only
     except requests.HTTPError:
+        # Massive returns a 404/4xx for tickers it doesn't recognize.
         return jsonify({"error": f"Unknown ticker symbol: {symbol}"}), 400
 
-    # Extract price and aggregate data
-    results = price_data.get("results", [])
-    if not results or not isinstance(results, list):
+    price = _extract_latest_price(data)
+    if price is None:
+        # No usable price in the response (e.g. delisted/invalid ticker
+        # that still 200s with an empty result set) - don't add it.
         return jsonify({"error": f"No price data available for ticker: {symbol}"}), 400
-    
-    agg = results[0] if results else {}
-    latest_price = agg.get("c")  # close price
-    if latest_price is None:
-        return jsonify({"error": f"No price data available for ticker: {symbol}"}), 400
-
-    # Extract rich aggregate data
-    day_open = agg.get("o")
-    day_high = agg.get("h")
-    day_low = agg.get("l")
-    day_close = agg.get("c")
-    volume = agg.get("v")
-    
-    # Try to get company details (separate API call)
-    company_name = None
-    sector = None
-    market_cap = None
-    try:
-        details = client.get_ticker_details(symbol)
-        if details and "results" in details:
-            result = details["results"]
-            company_name = result.get("name")
-            sector = result.get("sic_description") or result.get("primary_exchange")
-            market_cap = result.get("market_cap")
-    except Exception:
-        # If details fail, continue with just price data
-        pass
-
-    # Calculate previous close (day before)
-    previous_close = agg.get("vw")  # volume weighted average as proxy
 
     email = _current_user_email()
 
     lakebase.run_write(
         f"""
-        INSERT INTO {WATCHLIST_TABLE_NAME} 
-            (symbol, email, latest_price, company_name, day_open, day_high, day_low, 
-             day_close, previous_close, volume, market_cap, sector, updated_at)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, now())
+        INSERT INTO {WATCHLIST_TABLE_NAME} (symbol, email, latest_price, updated_at)
+        VALUES (%s, %s, %s, now())
         ON CONFLICT (symbol, email) DO UPDATE
             SET latest_price = EXCLUDED.latest_price,
-                company_name = EXCLUDED.company_name,
-                day_open = EXCLUDED.day_open,
-                day_high = EXCLUDED.day_high,
-                day_low = EXCLUDED.day_low,
-                day_close = EXCLUDED.day_close,
-                previous_close = EXCLUDED.previous_close,
-                volume = EXCLUDED.volume,
-                market_cap = EXCLUDED.market_cap,
-                sector = EXCLUDED.sector,
                 updated_at = EXCLUDED.updated_at
         """,
-        (symbol, email, latest_price, company_name, day_open, day_high, day_low, 
-         day_close, previous_close, volume, market_cap, sector),
+        (symbol, email, price),
     )
 
-    return jsonify({
-        "symbol": symbol, 
-        "email": email, 
-        "latest_price": latest_price,
-        "company_name": company_name,
-        "day_change": (day_close - previous_close) if (day_close and previous_close) else None
-    })
+    return jsonify({"symbol": symbol, "email": email, "latest_price": price})
 
 
 @app.route("/watchlist/<symbol>", methods=["DELETE"])
